@@ -1,10 +1,6 @@
 version: 0.0
-os: linux
-files:
-  - source: /
-    destination: /home/ec2-user/brain-tasks-app
-
-hooks:
-  AfterInstall:
-    - location: scripts/run_container.sh
-      timeout: 300
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: "task-def.json"
