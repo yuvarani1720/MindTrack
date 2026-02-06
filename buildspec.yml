@@ -5,21 +5,33 @@ env:
     AWS_DEFAULT_REGION: ap-south-1
     ECR_REPO_NAME: brain-tasks-app
     IMAGE_TAG: latest
+    EKS_CLUSTER_NAME: brain-eks-cluster
 
 phases:
+  install:
+    commands:
+      - echo Installing kubectl...
+      - curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.4/2023-11-14/bin/linux/amd64/kubectl
+      - chmod +x kubectl
+      - mv kubectl /usr/local/bin/
+
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION |
         docker login --username AWS --password-stdin 438296478178.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo Updating kubeconfig...
+      - aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name $EKS_CLUSTER_NAME
 
   build:
     commands:
       - echo Build Docker image
-      - docker build -t $ECR_REPO_NAME .
-      - docker tag $ECR_REPO_NAME:latest 438296478178.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO_NAME:latest
+      - docker build -t $ECR_REPO_NAME:$IMAGE_TAG .
+      - docker tag $ECR_REPO_NAME:$IMAGE_TAG 438296478178.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO_NAME:$IMAGE_TAG
 
   post_build:
     commands:
       - echo Push image to ECR
-      - docker push 438296478178.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO_NAME:latest
+      - docker push 438296478178.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO_NAME:$IMAGE_TAG
+      - echo Deploying to EKS...
+      - kubectl apply -f k8s/
