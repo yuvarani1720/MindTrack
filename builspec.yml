@@ -14,4 +14,6 @@ phases:
     commands:
       - echo Pushing Docker image...
       - docker push 438296478178.dkr.ecr.ap-south-1.amazonaws.com/brain-tasks-app:latest
-      - echo Build completed on `date`
+      - echo Deploying to EKS...
+      - chmod +x deploy.sh
+      - ./deploy.sh
